@@ -1,0 +1,120 @@
+/* eslint-disable no-shadow */
+/* eslint-disable no-unused-vars */
+import React, { useRef, useState } from 'react';
+import { Formik, Form, Field } from 'formik';
+import * as Yup from 'yup';
+import { Row, Card, CardBody, FormGroup, Label, Button } from 'reactstrap';
+import { Colxx } from 'components/common/CustomBootstrap';
+import IntlMessages from 'helpers/IntlMessages';
+import {
+    FormikReactSelect,
+    FormikCheckboxGroup,
+    FormikCheckbox,
+    FormikRadioButtonGroup,
+    FormikCustomCheckbox,
+    FormikCustomCheckboxGroup,
+    FormikCustomRadioGroup,
+    FormikTagsInput,
+    FormikSwitch,
+    FormikDatePicker,
+} from '../../containers/form-validations/FormikFields';
+import DropzoneImage from 'components/common/DropzoneImage';
+import axios from 'axios';
+import { NotificationManager } from 'components/common/react-notifications';
+import { getCurrentUser } from 'helpers/Utils';
+import { useHistory } from 'react-router-dom';
+// src\containers\form-validations\FormikFields.js
+
+const BrandSchema = Yup.object().shape({
+    name: Yup.string()
+        .required('Name is required!'),
+});
+
+const AddBrandForm = () => {
+    const dropzone = useRef();
+    const router = useHistory();
+
+    const [imageUrl, setImageUrl] = useState(null);
+
+    const onSubmit = (values, { setSubmitting }) => {
+        values.image = imageUrl;
+        if (imageUrl) {
+            let user = getCurrentUser();
+            console.log("ttttt ", user.token);
+            axios.post(`${process.env.REACT_APP_API_KEY}admin/brand`, {
+                brand: values
+            }, {
+                headers: {
+                    Authorization: "Bearer " + user.token
+                }
+            }).then(res => {
+                NotificationManager.success(values.name + " will start to show in website", "Brand Create", 3000, null, null, '');
+                router.push("/app/content/brands/list");
+            }).catch(err => {
+                NotificationManager.warning(err, 'Something Went Wrong!', 3000, null, null, '');
+            })
+        } else {
+            NotificationManager.error('Upload an image in drop zone', 'Image is required!', 3000, null, null, '');
+        }
+    };
+
+    return (
+        <Row className="mb-4">
+            <Colxx xxs="12">
+                <Card>
+                    <CardBody>
+                        {/* <h6 className="mb-4">Custom Components and Layouts with Yup</h6> */}
+                        <Formik
+                            initialValues={{
+                                name: '',
+                            }}
+                            validationSchema={BrandSchema}
+                            onSubmit={onSubmit}
+                        >
+                            {({
+                                handleSubmit,
+                                setFieldValue,
+                                setFieldTouched,
+                                handleChange,
+                                handleBlur,
+                                values,
+                                errors,
+                                touched,
+                                isSubmitting,
+                            }) => (
+                                <Form className="av-tooltip tooltip-label-right">
+                                    <Row>
+                                        <Colxx xxs="6">
+                                            <FormGroup className="error-l-100">
+                                                <Label>
+                                                    Name*
+                                                </Label>
+                                                <Field className="form-control" name="name" />
+                                                {errors.name && touched.name ? (
+                                                    <div className="invalid-feedback d-block">
+                                                        {errors.name}
+                                                    </div>
+                                                ) : null}
+                                            </FormGroup>
+                                        </Colxx>
+
+                                    </Row>
+                                    <Row className='mb-2'>
+                                        <Colxx xxs="6">
+                                            <DropzoneImage ref={dropzone} path="img/brand" setFile={setImageUrl} />
+                                        </Colxx>
+                                    </Row>
+
+                                    <Button color="primary" type="submit">
+                                        Submit
+                                    </Button>
+                                </Form>
+                            )}
+                        </Formik>
+                    </CardBody>
+                </Card>
+            </Colxx>
+        </Row>
+    );
+};
+export default AddBrandForm;
